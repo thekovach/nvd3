@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="../build/nv.d3.css" rel="stylesheet" type="text/css">
+    <script src='http://code.jquery.com/jquery-latest.min.js' type='text/javascript'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.js" charset="utf-8"></script>
+    <script src="../build/nv.d3.js"></script>
+    <script src="lib/stream_layers.js"></script>
+
+    <style>
+        text {
+            font: 12px sans-serif;
+        }
+        svg {
+            display: block;
+        }
+        html, body, #chart {
+            margin: 0px;
+            padding: 0px;
+            height: 100%;
+            width: 100%;
+        }
+        svg {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chart" class='with-3d-shadow with-transitions'>
+    <svg></svg>
+</div>
+
+<script>
+
+    function makeGraph(nvd3Data) {
+        nv.addGraph(function() {
+
+            //console.log(nvd3Data[1].values[0]);
+            var customTimeFormat = d3.time.format.multi([
+              // [".%L", function(d) { return d.getMilliseconds(); }],
+              // [":%S", function(d) { return d.getSeconds(); }],
+              // ["%I:%M", function(d) { return d.getMinutes(); }],
+              // ["%I %p %d", function(d) { return d.getHours(); }],
+              ["%d %b %Y", function(d) { return d.getDay() && d.getDate() != 1; }],
+              ["%b %Y", function(d) { return d.getDate() != 1; }],
+              ["%b %Y", function(d) { return d.getMonth(); }],
+              ["%Y", function() { return true; }]
+            ]);
+
+            var minMax = d3.extent(nvd3Data[0].values, function(d) {return d.y;});
+            minMax = minMax * 1.5;
+
+            var chart = nv.models.lineWithFocusChart()
+                .margin({top: 30, right: 60, bottom: 50, left: 200})
+                //.forceY(minMax)
+                //.transitionDuration(0)
+                ;
+
+            chart.xAxis //.ticks(d3.time.days, 1)
+                .showMaxMin(false)
+                .tickFormat(customTimeFormat);
+                // .tickFormat(function(d) {
+                //     // console.log(arguments);
+                //     // console.log(event);
+                //   return d3.time.format('%b %Y')(new Date(d))
+                // });
+            chart.xScale(d3.time.scale());
+            chart.x2Axis.showMaxMin(false).tickValues(0);
+            chart.yAxis
+                .showMaxMin(false)
+                .tickFormat(function(d) {
+                    var prefix = d3.formatPrefix(d);
+                    return "" + prefix.scale(d) + prefix.symbol;
+                });
+            chart.y2Axis.showMaxMin(false).tickValues(0);
+
+            chart.yAxis.scale().range([-10000000000, 100]);
+
+            d3.select('#chart svg')
+                .datum(nvd3Data)
+                .call(chart);
+
+            nv.utils.windowResize(chart.update);
+
+            crt =  chart;
+            return chart;
+        });
+    }
+
+    function testData() {
+        return stream_layers(3,128,.1).map(function(data, i) {
+            return {
+                key: 'Stream' + i,
+                area: i === 1,
+                values: data
+            };
+        });
+    }
+
+    function loadData() {
+        $.getJSON('data/pnl/labels.json', function(labels) {
+            $.getJSON('data/pnl/series1.json', function(data) {
+                var d = [];
+                for (var i=1; i<labels.length; i++) {
+
+                    d.push({
+                        key: labels[i],
+                        values: data.map(function(dataArray) {
+                            return { //  ISO 8601 time format
+                                x: d3.time.format.iso.parse(dataArray[0]),
+                                y: dataArray[i]
+                            };
+                        })
+                    });
+                }
+
+                makeGraph(d);
+            });
+        });
+
+        //return d;
+    };
+
+    loadData();
+
+</script>
+</body>
+</html>

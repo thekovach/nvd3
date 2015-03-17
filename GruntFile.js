@@ -121,6 +121,17 @@ module.exports = function(grunt) {
                     ]
                 }
             }
+        },
+        connect: {
+            static: {
+                options: {
+                    base: '.',
+                    hostname: 'localhost',
+                    port: '8282',
+                    keepalive: true,
+                    open: false
+                }
+            }
         }
     });
 
@@ -132,9 +143,11 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-cssmin');
     grunt.loadNpmTasks('grunt-karma');
     grunt.loadNpmTasks('grunt-text-replace');
+    grunt.loadNpmTasks('grunt-contrib-connect')
 
     grunt.registerTask('default', ['concat','copy','karma:unit']);
     grunt.registerTask('production', ['concat', 'uglify', 'copy', 'cssmin', 'replace']);
     grunt.registerTask('release', ['production']);
     grunt.registerTask('lint', ['jshint']);
+    grunt.registerTask('dev', ['connect:static']);
 };
